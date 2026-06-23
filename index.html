@@ -3,88 +3,614 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>乘法计算器</title>
+<title>2048</title>
 <style>
-  * { box-sizing: border-box; }
+  * {
+    box-sizing: border-box;
+  }
+
+  :root {
+    color-scheme: light;
+    --page: #f7f3ea;
+    --ink: #2d2a26;
+    --muted: #756f66;
+    --board: #a99582;
+    --cell: #cbbba6;
+    --accent: #3d7a68;
+    --accent-dark: #2f5f51;
+    --danger: #b94a48;
+    --tile-2: #eee4da;
+    --tile-4: #ede0c8;
+    --tile-8: #f2b179;
+    --tile-16: #f59563;
+    --tile-32: #f67c5f;
+    --tile-64: #f65e3b;
+    --tile-128: #edcf72;
+    --tile-256: #edcc61;
+    --tile-512: #edc850;
+    --tile-1024: #edc53f;
+    --tile-2048: #edc22e;
+  }
+
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    max-width: 400px; margin: 80px auto; padding: 0 16px;
+    min-height: 100vh;
+    margin: 0;
+    padding: 28px 16px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    background: var(--page);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
-  .form-group { margin-bottom: 16px; }
-  label { display: block; margin-bottom: 4px; font-weight: 500; }
-  input[type=number] {
-    width: 100%; padding: 10px 12px; font-size: 16px;
-    border: 1px solid #ccc; border-radius: 6px; outline: none;
+
+  main {
+    width: min(100%, 480px);
   }
-  input[type=number]:focus { border-color: #4A90D9; box-shadow: 0 0 0 2px rgba(74,144,217,0.2); }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 52px;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .score-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .score-box {
+    min-width: 82px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #776b5f;
+    color: #fff;
+    text-align: center;
+  }
+
+  .score-box span {
+    display: block;
+    font-size: 12px;
+    line-height: 1.2;
+    color: #e9ded2;
+  }
+
+  .score-box strong {
+    display: block;
+    margin-top: 3px;
+    font-size: 20px;
+    line-height: 1.1;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .status {
+    min-height: 38px;
+    padding: 8px 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  .status strong {
+    color: var(--ink);
+  }
+
   button {
-    width: 100%; padding: 10px 0; font-size: 16px; font-weight: 500;
-    color: #fff; background: #4A90D9; border: none; border-radius: 6px;
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
     cursor: pointer;
   }
-  button:hover { background: #357ABD; }
-  button:active { background: #2A5D9E; }
-  #result {
-    margin-top: 20px; padding: 12px 16px;
-    border-radius: 6px; font-size: 18px; font-weight: 500;
-    text-align: center; display: none;
+
+  button:hover {
+    background: var(--accent-dark);
   }
-  #result.success { background: #E8F5E9; color: #2E7D32; display: block; }
-  #result.error { background: #FFEBEE; color: #C62828; display: block; }
+
+  button:active {
+    transform: translateY(1px);
+  }
+
+  .board {
+    width: 100%;
+    aspect-ratio: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    background: var(--board);
+    touch-action: none;
+    user-select: none;
+  }
+
+  .tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 0;
+    border-radius: 6px;
+    background: var(--cell);
+    color: #776e65;
+    font-weight: 800;
+    font-size: clamp(26px, 10vw, 48px);
+    line-height: 1;
+  }
+
+  .tile[data-value="0"] {
+    color: transparent;
+  }
+
+  .tile[data-value="2"] { background: var(--tile-2); }
+  .tile[data-value="4"] { background: var(--tile-4); }
+  .tile[data-value="8"] { background: var(--tile-8); color: #fff; }
+  .tile[data-value="16"] { background: var(--tile-16); color: #fff; }
+  .tile[data-value="32"] { background: var(--tile-32); color: #fff; }
+  .tile[data-value="64"] { background: var(--tile-64); color: #fff; }
+  .tile[data-value="128"] { background: var(--tile-128); color: #fff; font-size: clamp(22px, 8vw, 40px); }
+  .tile[data-value="256"] { background: var(--tile-256); color: #fff; font-size: clamp(22px, 8vw, 40px); }
+  .tile[data-value="512"] { background: var(--tile-512); color: #fff; font-size: clamp(22px, 8vw, 40px); }
+  .tile[data-value="1024"] { background: var(--tile-1024); color: #fff; font-size: clamp(18px, 7vw, 34px); }
+  .tile[data-value="2048"] { background: var(--tile-2048); color: #fff; font-size: clamp(18px, 7vw, 34px); }
+
+  .message {
+    margin-top: 14px;
+    min-height: 24px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .message[data-state="won"] {
+    color: var(--accent-dark);
+    font-weight: 700;
+  }
+
+  .message[data-state="lost"] {
+    color: var(--danger);
+    font-weight: 700;
+  }
+
+  @media (max-width: 420px) {
+    body {
+      padding-top: 18px;
+    }
+
+    h1 {
+      font-size: 44px;
+    }
+
+    .topbar {
+      align-items: stretch;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .score-row {
+      width: 100%;
+    }
+
+    .score-box {
+      flex: 1;
+    }
+
+    .board {
+      gap: 8px;
+      padding: 8px;
+    }
+  }
 </style>
 </head>
 <body>
+<main>
+  <div class="topbar">
+    <h1>2048</h1>
+    <div class="score-row" aria-label="成绩">
+      <div class="score-box">
+        <span>分数</span>
+        <strong id="scoreValue">0</strong>
+      </div>
+      <div class="score-box">
+        <span>最高</span>
+        <strong id="bestValue">0</strong>
+      </div>
+      <div class="score-box">
+        <span>用时</span>
+        <strong id="timeValue">0s</strong>
+      </div>
+    </div>
+  </div>
 
-<h2>乘法计算器</h2>
+  <div class="controls">
+    <div class="status" id="statusText">合并方块，得到 <strong>2048</strong>。</div>
+    <button type="button" id="restartButton">重新开始</button>
+  </div>
 
-<div class="form-group">
-  <label for="a">数字 A</label>
-  <input type="number" id="a" value="0">
-</div>
-
-<div class="form-group">
-  <label for="b">数字 B</label>
-  <input type="number" id="b" value="0">
-</div>
-
-<button id="calcBtn">计算</button>
-
-<div id="result"></div>
+  <div class="board" id="board" role="grid" aria-label="2048 棋盘"></div>
+  <div class="message" id="message" aria-live="polite"></div>
+</main>
 
 <script>
-const aInput = document.getElementById('a');
-const bInput = document.getElementById('b');
-const calcBtn = document.getElementById('calcBtn');
-const resultEl = document.getElementById('result');
+const BOARD_SIZE = 4;
+const WIN_TILE = 2048;
+const STORAGE_KEY = 'game-2048-best-score';
 
-calcBtn.addEventListener('click', async () => {
-  const a = aInput.value;
-  const b = bInput.value;
+let board = [];
+let score = 0;
+let bestScore = Number(localStorage.getItem(STORAGE_KEY) || 0);
+let elapsedSeconds = 0;
+let status = 'playing';
+let timerId = null;
+let timerStartedAt = 0;
+let resultSubmitted = false;
+let touchStartX = 0;
+let touchStartY = 0;
 
-  resultEl.className = '';
-  resultEl.textContent = '';
+const boardEl = document.getElementById('board');
+const scoreEl = document.getElementById('scoreValue');
+const bestEl = document.getElementById('bestValue');
+const timeEl = document.getElementById('timeValue');
+const statusEl = document.getElementById('statusText');
+const messageEl = document.getElementById('message');
+const restartButton = document.getElementById('restartButton');
 
-  try {
-    const resp = await fetch(`http://localhost:8000/multiply?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`);
-    if (!resp.ok) {
-      throw new Error(`服务器返回错误 (HTTP ${resp.status})`);
+function initGame() {
+  restartButton.addEventListener('click', restartGame);
+  document.addEventListener('keydown', handleKeyboardEvent);
+  boardEl.addEventListener('touchstart', handleTouchStart, { passive: false });
+  boardEl.addEventListener('touchend', handleTouchEnd, { passive: false });
+  restartGame();
+}
+
+function createEmptyBoard(size) {
+  return Array.from({ length: size }, () => Array(size).fill(0));
+}
+
+function cloneBoard(sourceBoard) {
+  return sourceBoard.map(row => row.slice());
+}
+
+function addRandomTile(sourceBoard) {
+  const nextBoard = cloneBoard(sourceBoard);
+  const emptyCells = [];
+
+  for (let row = 0; row < nextBoard.length; row += 1) {
+    for (let col = 0; col < nextBoard[row].length; col += 1) {
+      if (nextBoard[row][col] === 0) {
+        emptyCells.push({ row, col });
+      }
     }
-    const data = await resp.json();
-    if (data.result === undefined) {
-      throw new Error('服务器返回格式异常');
-    }
-    resultEl.textContent = `结果：${data.result}`;
-    resultEl.className = 'success';
-  } catch (err) {
-    if (err instanceof TypeError && err.message === 'Failed to fetch') {
-      resultEl.textContent = '网络错误：无法连接到服务器（http://localhost:8000），请确认后端已启动';
-    } else {
-      resultEl.textContent = `错误：${err.message}`;
-    }
-    resultEl.className = 'error';
   }
-});
-</script>
 
+  if (emptyCells.length === 0) {
+    return nextBoard;
+  }
+
+  const selected = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+  nextBoard[selected.row][selected.col] = Math.random() < 0.9 ? 2 : 4;
+  return nextBoard;
+}
+
+function renderBoard(renderedBoard, currentScore, currentElapsedSeconds, currentStatus) {
+  scoreEl.textContent = String(currentScore);
+  bestEl.textContent = String(bestScore);
+  timeEl.textContent = `${currentElapsedSeconds}s`;
+
+  if (currentStatus === 'won') {
+    statusEl.innerHTML = '胜利：已合成 <strong>2048</strong>。';
+    messageEl.textContent = '游戏结束，成绩已尝试提交。';
+  } else if (currentStatus === 'lost') {
+    statusEl.innerHTML = '失败：没有可移动的方块。';
+    messageEl.textContent = '游戏结束，成绩已尝试提交。';
+  } else {
+    statusEl.innerHTML = '合并方块，得到 <strong>2048</strong>。';
+    messageEl.textContent = '使用方向键或滑动移动方块。';
+  }
+
+  messageEl.dataset.state = currentStatus;
+  boardEl.innerHTML = '';
+
+  renderedBoard.flat().forEach((value, index) => {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.dataset.value = String(value);
+    tile.setAttribute('role', 'gridcell');
+    tile.setAttribute('aria-label', value === 0 ? '空' : String(value));
+    tile.textContent = value === 0 ? '' : String(value);
+    boardEl.appendChild(tile);
+  });
+}
+
+function move(direction) {
+  if (status !== 'playing') {
+    return {
+      moved: false,
+      scoreGained: 0,
+      score,
+      board: cloneBoard(board)
+    };
+  }
+
+  const previousBoard = cloneBoard(board);
+  const nextBoard = createEmptyBoard(BOARD_SIZE);
+  let scoreGained = 0;
+
+  for (let index = 0; index < BOARD_SIZE; index += 1) {
+    let line = [];
+
+    if (direction === 'left' || direction === 'right') {
+      line = previousBoard[index].slice();
+      if (direction === 'right') {
+        line.reverse();
+      }
+    } else if (direction === 'up' || direction === 'down') {
+      line = previousBoard.map(row => row[index]);
+      if (direction === 'down') {
+        line.reverse();
+      }
+    } else {
+      return {
+        moved: false,
+        scoreGained: 0,
+        score,
+        board: cloneBoard(board)
+      };
+    }
+
+    const merged = mergeLine(line);
+    let mergedLine = merged.line.slice();
+    scoreGained += merged.score;
+
+    if (direction === 'right' || direction === 'down') {
+      mergedLine.reverse();
+    }
+
+    for (let offset = 0; offset < BOARD_SIZE; offset += 1) {
+      if (direction === 'left' || direction === 'right') {
+        nextBoard[index][offset] = mergedLine[offset];
+      } else {
+        nextBoard[offset][index] = mergedLine[offset];
+      }
+    }
+  }
+
+  const moved = !boardsEqual(previousBoard, nextBoard);
+
+  if (!moved) {
+    return {
+      moved: false,
+      scoreGained: 0,
+      score,
+      board: cloneBoard(board)
+    };
+  }
+
+  board = addRandomTile(nextBoard);
+  score += scoreGained;
+  if (score > bestScore) {
+    bestScore = score;
+    localStorage.setItem(STORAGE_KEY, String(bestScore));
+  }
+
+  if (hasWon(board)) {
+    status = 'won';
+    stopTimer();
+    submitFinalResult();
+  } else if (!canMove(board)) {
+    status = 'lost';
+    stopTimer();
+    submitFinalResult();
+  }
+
+  renderBoard(board, score, elapsedSeconds, status);
+
+  return {
+    moved: true,
+    scoreGained,
+    score,
+    board: cloneBoard(board)
+  };
+}
+
+function mergeLine(line) {
+  const compacted = line.filter(value => value !== 0);
+  const mergedLine = [];
+  let gained = 0;
+  let merged = false;
+
+  for (let index = 0; index < compacted.length; index += 1) {
+    if (compacted[index] === compacted[index + 1]) {
+      const value = compacted[index] * 2;
+      mergedLine.push(value);
+      gained += value;
+      merged = true;
+      index += 1;
+    } else {
+      mergedLine.push(compacted[index]);
+    }
+  }
+
+  while (mergedLine.length < line.length) {
+    mergedLine.push(0);
+  }
+
+  return {
+    line: mergedLine,
+    score: gained,
+    changed: merged || !arraysEqual(line, mergedLine)
+  };
+}
+
+function canMove(targetBoard) {
+  for (let row = 0; row < targetBoard.length; row += 1) {
+    for (let col = 0; col < targetBoard[row].length; col += 1) {
+      const value = targetBoard[row][col];
+      if (value === 0) {
+        return true;
+      }
+      if (row < targetBoard.length - 1 && targetBoard[row + 1][col] === value) {
+        return true;
+      }
+      if (col < targetBoard[row].length - 1 && targetBoard[row][col + 1] === value) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function hasWon(targetBoard) {
+  return targetBoard.some(row => row.some(value => value >= WIN_TILE));
+}
+
+function startTimer() {
+  stopTimer();
+  timerStartedAt = Date.now() - elapsedSeconds * 1000;
+  timerId = window.setInterval(() => {
+    elapsedSeconds = Math.floor((Date.now() - timerStartedAt) / 1000);
+    renderBoard(board, score, elapsedSeconds, status);
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerId !== null) {
+    window.clearInterval(timerId);
+    timerId = null;
+  }
+}
+
+function restartGame() {
+  stopTimer();
+  board = addRandomTile(addRandomTile(createEmptyBoard(BOARD_SIZE)));
+  score = 0;
+  elapsedSeconds = 0;
+  status = 'playing';
+  resultSubmitted = false;
+  renderBoard(board, score, elapsedSeconds, status);
+  startTimer();
+}
+
+function handleKeyboardEvent(event) {
+  const keyToDirection = {
+    ArrowUp: 'up',
+    ArrowRight: 'right',
+    ArrowDown: 'down',
+    ArrowLeft: 'left'
+  };
+  const direction = keyToDirection[event.key];
+
+  if (!direction) {
+    return;
+  }
+
+  event.preventDefault();
+  move(direction);
+}
+
+function handleTouchStart(event) {
+  if (event.touches.length !== 1) {
+    return;
+  }
+
+  event.preventDefault();
+  touchStartX = event.touches[0].clientX;
+  touchStartY = event.touches[0].clientY;
+}
+
+function handleTouchEnd(event) {
+  if (event.changedTouches.length !== 1) {
+    return;
+  }
+
+  event.preventDefault();
+  const touchEndX = event.changedTouches[0].clientX;
+  const touchEndY = event.changedTouches[0].clientY;
+  const dx = touchEndX - touchStartX;
+  const dy = touchEndY - touchStartY;
+  const minDistance = 30;
+
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < minDistance) {
+    return;
+  }
+
+  if (Math.abs(dx) > Math.abs(dy)) {
+    move(dx > 0 ? 'right' : 'left');
+  } else {
+    move(dy > 0 ? 'down' : 'up');
+  }
+}
+
+async function submitGameResult(finalScore, finalElapsedSeconds, finalStatus) {
+  try {
+    const response = await fetch('/api/game-records', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        game: '2048',
+        score: finalScore,
+        elapsedSeconds: finalElapsedSeconds,
+        status: finalStatus
+      })
+    });
+
+    if (!response.ok) {
+      return { ok: false };
+    }
+
+    const data = await response.json();
+    return { ok: Boolean(data.ok) };
+  } catch (error) {
+    return { ok: false };
+  }
+}
+
+function submitFinalResult() {
+  if (resultSubmitted) {
+    return;
+  }
+
+  resultSubmitted = true;
+  submitGameResult(score, elapsedSeconds, status).then(result => {
+    if (status !== 'playing') {
+      messageEl.textContent = result.ok ? '游戏结束，成绩已提交。' : '游戏结束，成绩提交失败，可直接重新开始。';
+    }
+  });
+}
+
+function arraysEqual(first, second) {
+  return first.length === second.length && first.every((value, index) => value === second[index]);
+}
+
+function boardsEqual(first, second) {
+  return first.length === second.length && first.every((row, rowIndex) => arraysEqual(row, second[rowIndex]));
+}
+
+window.addEventListener('DOMContentLoaded', initGame);
+</script>
 </body>
 </html>
