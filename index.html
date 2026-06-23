@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>乘法计算器</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 400px; margin: 80px auto; padding: 0 16px;
+  }
+  .form-group { margin-bottom: 16px; }
+  label { display: block; margin-bottom: 4px; font-weight: 500; }
+  input[type=number] {
+    width: 100%; padding: 10px 12px; font-size: 16px;
+    border: 1px solid #ccc; border-radius: 6px; outline: none;
+  }
+  input[type=number]:focus { border-color: #4A90D9; box-shadow: 0 0 0 2px rgba(74,144,217,0.2); }
+  button {
+    width: 100%; padding: 10px 0; font-size: 16px; font-weight: 500;
+    color: #fff; background: #4A90D9; border: none; border-radius: 6px;
+    cursor: pointer;
+  }
+  button:hover { background: #357ABD; }
+  button:active { background: #2A5D9E; }
+  #result {
+    margin-top: 20px; padding: 12px 16px;
+    border-radius: 6px; font-size: 18px; font-weight: 500;
+    text-align: center; display: none;
+  }
+  #result.success { background: #E8F5E9; color: #2E7D32; display: block; }
+  #result.error { background: #FFEBEE; color: #C62828; display: block; }
+</style>
+</head>
+<body>
+
+<h2>乘法计算器</h2>
+
+<div class="form-group">
+  <label for="a">数字 A</label>
+  <input type="number" id="a" value="0">
+</div>
+
+<div class="form-group">
+  <label for="b">数字 B</label>
+  <input type="number" id="b" value="0">
+</div>
+
+<button id="calcBtn">计算</button>
+
+<div id="result"></div>
+
+<script>
+const aInput = document.getElementById('a');
+const bInput = document.getElementById('b');
+const calcBtn = document.getElementById('calcBtn');
+const resultEl = document.getElementById('result');
+
+calcBtn.addEventListener('click', async () => {
+  const a = aInput.value;
+  const b = bInput.value;
+
+  resultEl.className = '';
+  resultEl.textContent = '';
+
+  try {
+    const resp = await fetch(`http://localhost:8000/multiply?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`);
+    if (!resp.ok) {
+      throw new Error(`服务器返回错误 (HTTP ${resp.status})`);
+    }
+    const data = await resp.json();
+    if (data.result === undefined) {
+      throw new Error('服务器返回格式异常');
+    }
+    resultEl.textContent = `结果：${data.result}`;
+    resultEl.className = 'success';
+  } catch (err) {
+    if (err instanceof TypeError && err.message === 'Failed to fetch') {
+      resultEl.textContent = '网络错误：无法连接到服务器（http://localhost:8000），请确认后端已启动';
+    } else {
+      resultEl.textContent = `错误：${err.message}`;
+    }
+    resultEl.className = 'error';
+  }
+});
+</script>
+
+</body>
+</html>
