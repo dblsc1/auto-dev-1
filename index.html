@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>乘法计算器</title>
+  <style>
+    body { font-family: sans-serif; display: flex; justify-content: center; padding-top: 80px; background: #f5f5f5; }
+    .card { background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.1); width: 320px; }
+    h2 { margin: 0 0 24px; text-align: center; }
+    label { display: block; margin-bottom: 4px; font-size: 14px; color: #555; }
+    input { width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; margin-bottom: 16px; }
+    button { width: 100%; padding: 10px; background: #4f46e5; color: #fff; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
+    button:hover { background: #4338ca; }
+    #result { margin-top: 20px; text-align: center; font-size: 22px; font-weight: bold; min-height: 32px; }
+    #error { color: #dc2626; text-align: center; font-size: 14px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>乘法计算器</h2>
+    <label>数字 A</label>
+    <input id="a" type="number" placeholder="请输入数字" />
+    <label>数字 B</label>
+    <input id="b" type="number" placeholder="请输入数字" />
+    <button onclick="calculate()">计算</button>
+    <div id="result"></div>
+    <div id="error"></div>
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:8000";
+
+    async function calculate() {
+      const a = document.getElementById("a").value.trim();
+      const b = document.getElementById("b").value.trim();
+      document.getElementById("result").textContent = "";
+      document.getElementById("error").textContent = "";
+
+      if (a === "" || b === "" || isNaN(a) || isNaN(b)) {
+        document.getElementById("error").textContent = "请输入有效的数字";
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/multiply?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        document.getElementById("result").textContent = `结果：${data.result}`;
+      } catch (e) {
+        document.getElementById("error").textContent = `请求失败：${e.message}`;
+      }
+    }
+  </script>
+</body>
+</html>

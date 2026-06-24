@@ -1,0 +1,14 @@
+langgraph==1.2.6
+langgraph-checkpoint==4.1.1
+langgraph-prebuilt==1.1.0
+langgraph-sdk==0.4.2
+langchain-core==1.4.8
+claude-agent-sdk==0.2.106
+pydantic==2.13.4
+pydantic-settings==2.14.2
+httpx==0.28.1
+uvicorn==0.49.0
+fastapi==0.115.12
+python-dotenv==1.2.2
+json-repair
+pytest>=9.0.0

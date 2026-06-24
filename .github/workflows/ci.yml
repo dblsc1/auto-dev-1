@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # ── 静态检查 + 导入烟雾测试（不需要 API key）────────────────────────────────
+  lint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: growth-garden-builder
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Syntax check (all .py files)
+        run: |
+          find . -name "*.py" -not -path "./.venv/*" -not -path "./__pycache__/*" \
+            -exec python -m py_compile {} \;
+
+      - name: Import smoke test (stub mode, no API keys)
+        env:
+          DEEPSEEK_API_KEY: dummy
+          GLM_API_KEY: dummy
+        run: python -c "from graph import build; build(real=False); print('graph imports OK')"
+
+  # ── E2E playwright（仅测试 repo 内的示例 app，不需要 AI key）────────────────
+  e2e:
+    runs-on: ubuntu-latest
+    needs: lint
+    defaults:
+      run:
+        working-directory: growth-garden-builder
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt playwright pytest-playwright
+
+      - name: Install Playwright browsers
+        run: playwright install chromium --with-deps
+
+      - name: Start backend + frontend
+        run: |
+          uvicorn main:app --host 0.0.0.0 --port 8000 --log-level warning &
+          python -m http.server 3000 --bind 127.0.0.1 &
+          # wait for both services
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/multiply?a=1\&b=1 >/dev/null \
+               && curl -sf http://localhost:3000/ >/dev/null; then
+              echo "services ready after ${i}×0.5s"; break
+            fi
+            sleep 0.5
+          done
+
+      - name: Run E2E tests
+        run: python -m pytest tests/test_e2e.py -v --tb=short
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: growth-garden-builder/tests/
+          retention-days: 7
